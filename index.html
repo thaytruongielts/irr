@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trắc nghiệm Kéo Thả</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .draggable {
+            cursor: grab;
+            user-select: none;
+            transition: all 0.2s ease-in-out;
+        }
+        .draggable:active {
+            cursor: grabbing;
+        }
+        .dropzone {
+            transition: all 0.2s ease-in-out;
+            border: 2px dashed #d1d5db;
+        }
+        .dropzone.drag-over {
+            border-color: #4f46e5;
+            background-color: #eef2ff;
+        }
+        .correct {
+            background-color: #d1fae5 !important;
+        }
+        .incorrect {
+            background-color: #fee2e2 !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div id="app" class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-4xl">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Trắc nghiệm Ngữ pháp & Từ vựng</h1>
+        <p class="text-center text-gray-600 mb-8">Hãy kéo các đáp án vào ô trống để hoàn thành câu hỏi.</p>
+
+        <div id="quiz-container" class="space-y-8">
+            <!-- Câu hỏi sẽ được chèn vào đây bởi JavaScript -->
+        </div>
+
+        <div class="mt-8 flex justify-center space-x-4">
+            <button id="check-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-6 rounded-full shadow-lg transition transform hover:scale-105">
+                Kiểm Tra
+            </button>
+            <button id="reset-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-2 px-6 rounded-full shadow-lg transition transform hover:scale-105">
+                Làm Lại
+            </button>
+        </div>
+
+        <div id="result-container" class="mt-8 text-center text-lg font-semibold"></div>
+    </div>
+
+    <script>
+        // Dữ liệu câu hỏi mới
+        const quizData = [
+            { question_number: 1, question: 'Dạng V2 và V3 của động từ "dig" là gì?', option_a: 'A. digged / digged', option_b: 'B. dug / dug', option_c: 'C. dig / dug', option_d: 'D. digged / dug', correct_answer: 'B. dug / dug', feedback: '"Dig" là động từ bất quy tắc, V2 và V3 là "dug".' },
+            { question_number: 2, question: 'Động từ của danh từ "effect" là gì?', option_a: 'A. affect', option_b: 'B. effect', option_c: 'C. effective', option_d: 'D. effected', correct_answer: 'A. affect', feedback: '"Affect" (ảnh hưởng) là động từ, còn "effect" là danh từ (sự ảnh hưởng) hoặc động từ (gây ra) ít phổ biến hơn.' },
+            { question_number: 3, question: 'Dạng V2 và V3 của động từ "hide" là gì?', option_a: 'A. hide / hidden', option_b: 'B. hid / hid', option_c: 'C. hid / hidden', option_d: 'D. hided / hided', correct_answer: 'C. hid / hidden', feedback: '"Hide" là động từ bất quy tắc, V2 là "hid", V3 là "hidden".' },
+            { question_number: 4, question: 'Dạng V2 và V3 của động từ "ride" là gì?', option_a: 'A. rode / ridden', option_b: 'B. ride / ridden', option_c: 'C. rode / rode', option_d: 'D. rided / rided', correct_answer: 'A. rode / ridden', feedback: '"Ride" là động từ bất quy tắc, V2 là "rode", V3 là "ridden".' },
+            { question_number: 5, question: 'Dạng V2 và V3 của động từ "stand" là gì?', option_a: 'A. standed / standed', option_b: 'B. stood / stood', option_c: 'C. stand / stood', option_d: 'D. stood / standed', correct_answer: 'B. stood / stood', feedback: '"Stand" là động từ bất quy tắc, V2 và V3 là "stood".' },
+            { question_number: 6, question: 'Tính từ của danh từ "right" là gì?', option_a: 'A. rightness', option_b: 'B. rightment', option_c: 'C. right', option_d: 'D. rightion', correct_answer: 'C. right', feedback: 'Từ "right" có thể là cả danh từ và tính từ.' },
+            { question_number: 7, question: 'Dạng V2 và V3 của động từ "shoot" là gì?', option_a: 'A. shot / shot', option_b: 'B. shooted / shooted', option_c: 'C. shoot / shot', option_d: 'D. shot / shooting', correct_answer: 'A. shot / shot', feedback: '"Shoot" là động từ bất quy tắc, V2 và V3 là "shot".' },
+            { question_number: 8, question: 'Tính từ của danh từ "friend" là gì?', option_a: 'A. friendless', option_b: 'B. friendly', option_c: 'C. friendlier', option_d: 'D. friendship', correct_answer: 'B. friendly', feedback: '"Friendly" (thân thiện) là tính từ của "friend".' },
+            { question_number: 9, question: 'Dạng V2 và V3 của động từ "deal" là gì?', option_a: 'A. dealt / dealt', option_b: 'B. dealed / dealed', option_c: 'C. deal / dealt', option_d: 'D. dealt / dealed', correct_answer: 'A. dealt / dealt', feedback: '"Deal" là động từ bất quy tắc, V2 và V3 là "dealt".' },
+            { question_number: 10, question: 'Dạng V2 và V3 của động từ "swear" là gì?', option_a: 'A. swear / sworn', option_b: 'B. swore / swore', option_c: 'C. swore / sworn', option_d: 'D. sweared / sweared', correct_answer: 'C. swore / sworn', feedback: '"Swear" là động từ bất quy tắc, V2 là "swore", V3 là "sworn".' },
+            { question_number: 11, question: 'Dạng V2 và V3 của động từ "weep" là gì?', option_a: 'A. wept / wept', option_b: 'B. weep / wept', option_c: 'C. weeped / weeped', option_d: 'D. wept / weeped', correct_answer: 'A. wept / wept', feedback: '"Weep" là động từ bất quy tắc, V2 và V3 là "wept".' },
+            { question_number: 12, question: 'Dạng V2 và V3 của động từ "spit" là gì?', option_a: 'A. spat / spit', option_b: 'B. spit / spat', option_c: 'C. spitted / spitted', option_d: 'D. spat / spat', correct_answer: 'A. spat / spit', feedback: '"Spit" là động từ bất quy tắc, V2 là "spat", V3 là "spit".' },
+            { question_number: 13, question: 'Dạng V2 và V3 của động từ "tread" là gì?', option_a: 'A. treaded / treaded', option_b: 'B. trod / trod', option_c: 'C. trod / trodden', option_d: 'D. trode / trod', correct_answer: 'C. trod / trodden', feedback: '"Tread" là động từ bất quy tắc, V2 là "trod", V3 là "trodden".' },
+            { question_number: 14, question: 'Dạng V2 và V3 của động từ "strive" là gì?', option_a: 'A. strived / strived', option_b: 'B. strove / striven', option_c: 'C. strove / strove', option_d: 'D. strived / striven', correct_answer: 'B. strove / striven', feedback: '"Strive" là động từ bất quy tắc, V2 là "strove", V3 là "striven".' },
+            { question_number: 15, question: 'Dạng V2 và V3 của động từ "spin" là gì?', option_a: 'A. spin / spin', option_b: 'B. spun / spun', option_c: 'C. spinned / spinned', option_d: 'D. spun / spinned', correct_answer: 'B. spun / spun', feedback: '"Spin" là động từ bất quy tắc, V2 và V3 là "spun".' },
+            { question_number: 16, question: 'Dạng V2 và V3 của động từ "ring" là gì?', option_a: 'A. ring / rung', option_b: 'B. rang / rung', option_c: 'C. ringed / ringed', option_d: 'D. rang / rang', correct_answer: 'B. rang / rung', feedback: '"Ring" là động từ bất quy tắc, V2 là "rang", V3 là "rung".' },
+            { question_number: 17, question: 'Dạng V2 và V3 của động từ "swim" là gì?', option_a: 'A. swim / swum', option_b: 'B. swam / swum', option_c: 'C. swum / swam', option_d: 'D. swimmed / swimmed', correct_answer: 'B. swam / swum', feedback: '"Swim" là động từ bất quy tắc, V2 là "swam", V3 là "swum".' },
+            { question_number: 18, question: 'Dạng V2 và V3 của động từ "fly" là gì?', option_a: 'A. fly / flown', option_b: 'B. flew / flown', option_c: 'C. flew / flew', option_d: 'D. flyed / flyed', correct_answer: 'B. flew / flown', feedback: '"Fly" là động từ bất quy tắc, V2 là "flew", V3 là "flown".' },
+            { question_number: 19, question: 'Dạng V2 và V3 của động từ "think" là gì?', option_a: 'A. think / thought', option_b: 'B. thought / thought', option_c: 'C. thinked / thinked', option_d: 'D. thought / thinked', correct_answer: 'B. thought / thought', feedback: '"Think" là động từ bất quy tắc, V2 và V3 là "thought".' },
+            { question_number: 20, question: 'Dạng V2 và V3 của động từ "bring" là gì?', option_a: 'A. bringed / bringed', option_b: 'B. brought / brought', option_c: 'C. bring / brought', option_d: 'D. brought / bring', correct_answer: 'B. brought / brought', feedback: '"Bring" là động từ bất quy tắc, V2 và V3 là "brought".' }
+        ];
+
+        let draggedItem = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderQuiz();
+            setupEventListeners();
+        });
+
+        function renderQuiz() {
+            const quizContainer = document.getElementById('quiz-container');
+            quizContainer.innerHTML = '';
+            quizData.forEach(q => {
+                const questionElement = document.createElement('div');
+                questionElement.classList.add('p-6', 'bg-gray-50', 'rounded-xl', 'shadow-md', 'border', 'border-gray-200');
+
+                const questionText = document.createElement('p');
+                questionText.classList.add('text-lg', 'font-medium', 'text-gray-700', 'mb-4');
+                questionText.textContent = q.question_number + '. ' + q.question;
+                questionElement.appendChild(questionText);
+
+                const optionsContainer = document.createElement('div');
+                optionsContainer.classList.add('options-container', 'flex', 'flex-col', 'sm:flex-row', 'sm:flex-wrap', 'gap-4', 'justify-between');
+
+                const options = [q.option_a, q.option_b, q.option_c, q.option_d];
+                // Xáo trộn các đáp án để không bị cố định
+                options.sort(() => Math.random() - 0.5);
+
+                options.forEach(option => {
+                    const optionElement = document.createElement('div');
+                    optionElement.classList.add('draggable', 'p-3', 'bg-white', 'rounded-lg', 'shadow-sm', 'border', 'border-gray-200', 'flex-1', 'text-center', 'font-medium', 'text-gray-800');
+                    optionElement.textContent = option;
+                    optionElement.setAttribute('draggable', true);
+                    optionElement.dataset.value = option; // Lưu giá trị của đáp án
+                    optionsContainer.appendChild(optionElement);
+                });
+
+                const dropzone = document.createElement('div');
+                dropzone.classList.add('dropzone', 'p-6', 'bg-gray-100', 'rounded-lg', 'text-center', 'min-h-16', 'flex', 'items-center', 'justify-center', 'text-gray-500', 'mt-4');
+                dropzone.textContent = 'Kéo đáp án vào đây...';
+                dropzone.dataset.correctAnswer = q.correct_answer;
+                
+                questionElement.appendChild(optionsContainer);
+                questionElement.appendChild(dropzone);
+                quizContainer.appendChild(questionElement);
+            });
+        }
+
+        function setupEventListeners() {
+            const quizContainer = document.getElementById('quiz-container');
+
+            quizContainer.addEventListener('dragstart', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    draggedItem = e.target;
+                    e.target.classList.add('opacity-50');
+                }
+            });
+
+            quizContainer.addEventListener('dragend', (e) => {
+                if (e.target.classList.contains('draggable')) {
+                    e.target.classList.remove('opacity-50');
+                }
+            });
+
+            quizContainer.addEventListener('dragover', (e) => {
+                const dropzone = e.target.closest('.dropzone');
+                if (dropzone) {
+                    e.preventDefault();
+                    dropzone.classList.add('drag-over');
+                }
+            });
+
+            quizContainer.addEventListener('dragleave', (e) => {
+                const dropzone = e.target.closest('.dropzone');
+                if (dropzone) {
+                    dropzone.classList.remove('drag-over');
+                }
+            });
+
+            quizContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const dropzone = e.target.closest('.dropzone');
+                if (dropzone && draggedItem) {
+                    // Tìm phần tử draggable đã có trong dropzone
+                    const existingItem = dropzone.querySelector('.draggable');
+                    
+                    if (existingItem) {
+                        // Di chuyển phần tử cũ về vị trí ban đầu
+                        const originalContainer = existingItem.closest('.p-6').querySelector('.options-container');
+                        if (originalContainer) {
+                             originalContainer.appendChild(existingItem);
+                             existingItem.classList.remove('correct', 'incorrect');
+                        }
+                    }
+
+                    // Gắn phần tử mới vào dropzone
+                    dropzone.innerHTML = ''; // Xóa placeholder text
+                    dropzone.classList.remove('drag-over');
+                    dropzone.appendChild(draggedItem);
+                }
+            });
+
+            document.getElementById('check-btn').addEventListener('click', () => {
+                checkAnswers();
+            });
+
+            document.getElementById('reset-btn').addEventListener('click', () => {
+                resetQuiz();
+            });
+        }
+
+        function checkAnswers() {
+            const dropzones = document.querySelectorAll('.dropzone');
+            let correctCount = 0;
+
+            dropzones.forEach((dropzone, index) => {
+                // Xóa phản hồi cũ trước khi kiểm tra
+                const oldFeedback = dropzone.querySelector('.feedback');
+                if (oldFeedback) oldFeedback.remove();
+                
+                const droppedItem = dropzone.querySelector('.draggable');
+                const correctAnswer = dropzone.dataset.correctAnswer;
+                
+                const feedbackDiv = document.createElement('p');
+                feedbackDiv.classList.add('text-sm', 'mt-2', 'font-normal');
+
+                if (droppedItem && droppedItem.dataset.value === correctAnswer) {
+                    dropzone.classList.add('correct');
+                    dropzone.classList.remove('incorrect');
+                    droppedItem.classList.add('correct');
+                    droppedItem.classList.remove('incorrect');
+                    feedbackDiv.classList.add('text-green-700', 'feedback');
+                    feedbackDiv.textContent = 'Đúng rồi!';
+                    correctCount++;
+                } else {
+                    dropzone.classList.add('incorrect');
+                    dropzone.classList.remove('correct');
+                    if (droppedItem) {
+                        droppedItem.classList.add('incorrect');
+                        droppedItem.classList.remove('correct');
+                    }
+                    feedbackDiv.classList.add('text-red-700', 'feedback');
+                    feedbackDiv.textContent = `Sai. Đáp án đúng là: ${correctAnswer}.`;
+                }
+                
+                // Thêm phản hồi giải thích
+                const feedbackText = quizData[index].feedback;
+                const explainFeedback = document.createElement('p');
+                explainFeedback.classList.add('text-sm', 'mt-1', 'text-gray-500', 'feedback');
+                explainFeedback.textContent = feedbackText;
+
+                dropzone.appendChild(feedbackDiv);
+                dropzone.appendChild(explainFeedback);
+            });
+
+            const resultContainer = document.getElementById('result-container');
+            resultContainer.textContent = `Bạn đã trả lời đúng ${correctCount} / ${quizData.length} câu.`;
+            resultContainer.classList.remove('text-green-600', 'text-red-600');
+            if (correctCount === quizData.length) {
+                resultContainer.classList.add('text-green-600');
+            } else {
+                resultContainer.classList.add('text-red-600');
+            }
+        }
+
+        function resetQuiz() {
+            const quizContainer = document.getElementById('quiz-container');
+            quizContainer.innerHTML = '';
+            document.getElementById('result-container').textContent = '';
+            renderQuiz();
+        }
+    </script>
+</body>
+</html>
